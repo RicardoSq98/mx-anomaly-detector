@@ -2,8 +2,8 @@ name: Spark Auto Update
 
 on:
   schedule:
-    - cron: '0 14 * * *' # Esto es a las 8:00 AM hora CDMX (14:00 UTC)
-  workflow_dispatch:      # Este botón te permite correrlo manual para probar
+    - cron: '0 14 * * *'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -12,7 +12,7 @@ jobs:
       - name: Checkout del repositorio
         uses: actions/checkout@v3
 
-      - name: Configurar Java (Necesario para Spark)
+      - name: Configurar Java
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
