@@ -5,7 +5,7 @@ import plotly.express as px
 st.set_page_config(page_title="Monitor de Anomalías MX", layout="wide")
 
 st.title("🇲🇽 Detector de Anomalías: Tipo de Cambio")
-st.markdown("Sistema profesional procesado con **Apache Spark** y almacenado en **Parquet**.")
+st.markdown("Este sistema monitorea en tiempo real el tipo de cambio USD/MXN utilizando la API de Banxico. No es una simple gráfica; es un ecosistema que detecta automáticamente crisis financieras o movimientos atípicos (anomalías) mediante estadística avanzada y procesamiento distribuido.")
 
 # LEER PARQUET (Asegúrate de que el nombre coincida con el archivo que subas)
 # Si el archivo está en tu repo, pon el nombre directo:
