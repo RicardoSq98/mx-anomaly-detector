@@ -20,7 +20,7 @@ SERIE = 'SF43718'
 URL = f'https://www.banxico.org.mx/SieAPIRest/service/v1/series/{SERIE}/datos'
 
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-model = model = genai.GenerativeModel('models/gemini-1.5-flash-latest')
+model = genai.GenerativeModel('gemini-pro')
 
 # 3. FUNCIÓN DE IA (La que faltaba, ¡aquí está!)
 def obtener_explicacion_ia(fecha, valor):
