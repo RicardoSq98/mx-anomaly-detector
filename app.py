@@ -12,7 +12,7 @@ st.markdown("Sistema profesional procesado con **Apache Spark** y almacenado en 
 @st.cache_data
 def load_data():
     # Buscamos el archivo .parquet que descargaste de Drive
-    return pd.read_parquet("part-00000-5a19e0e5-5f4e-4e1d-8b85-e730434f9cd0-c000.snappy.parquet")
+    return pd.read_parquet("datos_anomalias.parquet")
 
 df = load_data()
 df['fecha'] = pd.to_datetime(df['fecha'])
