@@ -76,14 +76,15 @@ def obtener_explicacion_ia(fecha, valor):
     Actúa como un analista financiero Senior. 
     El tipo de cambio USD/MXN tuvo una anomalía el día {fecha} llegando a {valor}.
     Busca en tu base de datos qué eventos macroeconómicos o políticos ocurrieron en esa fecha 
-    y dame un resumen de máximo 12 palabras de por qué se disparó el dólar. 
+    y dame un resumen de máximo 10 palabras de por qué se disparó el dólar. 
     Sé muy directo. Ejemplo: 'Incertidumbre por elecciones y alza en tasas de la FED.'
     """
     try:
         response = model.generate_content(prompt)
         return response.text
     except:
-        return "Volatilidad de mercado por factores externos."
+        print(f"Error en Gemini para {fecha}: {e}")
+            return "Ajuste técnico de mercado."
 
 # Si detectamos anomalías hoy, generamos el JSON de noticias
 anomalias_recientes = df_final.filter(F.col("es_anomalia") == 1).sort(F.col("fecha").desc()).limit(5).collect()
