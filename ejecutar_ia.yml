@@ -1,0 +1,43 @@
+name: Spark Auto Update
+
+on:
+  schedule:
+    - cron: '0 14 * * *'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar Spark, IA y Librerías
+        run: |
+          pip install pyspark pandas pyarrow requests scipy google-generativeai
+
+      - name: Ejecutar Script de Spark e IA
+        run: python update_spark.py
+        env:
+          BANXICO_TOKEN: ${{ secrets.BANXICO_TOKEN }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+
+      - name: Guardar cambios en el Repo
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "Spark Robot"
+          # Agregamos el .parquet Y el .json de las noticias
+          git add datos_anomalias.parquet noticias_contexto.json
+          git commit -m "Actualización con IA: $(date)" || echo "Sin cambios"
+          git push
