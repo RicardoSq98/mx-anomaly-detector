@@ -16,17 +16,18 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17' # <--- ESTO ARREGLA EL ERROR DE LA CAPTURA
+          java-version: '17'
 
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Instalar Spark y Librerías
-        run: pip install pyspark pandas pyarrow requests scipy
+      - name: Instalar Spark, IA y Librerías
+        run: |
+          pip install pyspark pandas pyarrow requests scipy google-generativeai
 
-      - name: Ejecutar Script de Spark
+      - name: Ejecutar Script de Spark e IA
         run: python update_spark.py
         env:
           BANXICO_TOKEN: ${{ secrets.BANXICO_TOKEN }}
@@ -36,6 +37,7 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "Spark Robot"
-          git add datos_anomalias.parquet
-          git commit -m "Actualización automática: $(date)" || echo "Sin cambios"
+          # Agregamos el .parquet Y el .json de las noticias
+          git add datos_anomalias.parquet noticias_contexto.json
+          git commit -m "Actualización con IA: $(date)" || echo "Sin cambios"
           git push
