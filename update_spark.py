@@ -69,7 +69,7 @@ print("Pipeline ejecutado con éxito. Archivo datos_anomalias.parquet actualizad
 
 # Configurar la IA
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-model = genai.GenerativeModel('gemini-pro')
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 def obtener_explicacion_ia(fecha, valor):
     prompt = f"""
