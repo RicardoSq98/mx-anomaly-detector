@@ -1,0 +1,40 @@
+name: Spark Auto Update
+
+on:
+  schedule:
+    - cron: '0 14 * * *'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v3
+
+      - name: Configurar Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Instalar Spark y Librerías
+        run: pip install pyspark pandas pyarrow requests scipy
+
+      - name: Ejecutar Script de Spark
+        run: python update_spark.py
+        env:
+          BANXICO_TOKEN: ${{ secrets.BANXICO_TOKEN }}
+
+      - name: Guardar cambios en el Repo
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "Spark Robot"
+          git add datos_anomalias.parquet
+          git commit -m "Actualización automática: $(date)" || echo "Sin cambios hoy"
+          git push
