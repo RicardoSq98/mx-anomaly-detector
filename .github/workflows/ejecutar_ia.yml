@@ -41,12 +41,15 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "Spark Robot"
           
-          # ESTA LÍNEA ES LA MAGIA: Baja tus cambios antes de subir los del robot
+          # 1. Agregamos TODO lo que generó el script de Python (Parquet y JSON)
+          git add datos_anomalias.parquet noticias_contexto.json || echo "Archivos no encontrados"
+          
+          # 2. Hacemos un commit local para que Git esté tranquilo
+          git commit -m "Datos generados por el robot" || echo "Sin cambios nuevos"
+          
+          # 3. Ahora sí, bajamos tus cambios y mezclamos
           git pull origin main --rebase
           
-          git add datos_anomalias.parquet noticias_contexto.json
-          git commit -m "Actualización inteligente: $(date)" || echo "Sin cambios"
-          
-          # Forzamos el envío a la rama main
+          # 4. Empujamos todo a GitHub
           git push origin main
           
