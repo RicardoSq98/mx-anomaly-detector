@@ -1,5 +1,5 @@
 # mx-anomaly-detector
-El Proyecto
+## El Proyecto ##
 Este sistema monitorea en tiempo real el tipo de cambio USD/MXN utilizando la API de Banxico. No es una simple gráfica; es un ecosistema que detecta automáticamente crisis financieras o movimientos atípicos (anomalías) mediante estadística avanzada y procesamiento distribuido.
 
 ## Arquitectura del Sistema ##
