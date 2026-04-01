@@ -37,7 +37,13 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "Spark Robot"
-          # Agregamos el .parquet Y el .json de las noticias
+          
+          # ESTA LÍNEA ES LA MAGIA: Baja tus cambios antes de subir los del robot
+          git pull origin main --rebase
+          
           git add datos_anomalias.parquet noticias_contexto.json
-          git commit -m "Actualización con IA: $(date)" || echo "Sin cambios"
-          git push
+          git commit -m "Actualización inteligente: $(date)" || echo "Sin cambios"
+          
+          # Forzamos el envío a la rama main
+          git push origin main
+          
