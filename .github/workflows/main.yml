@@ -30,6 +30,7 @@ jobs:
         run: python update_spark.py
         env:
           BANXICO_TOKEN: ${{ secrets.BANXICO_TOKEN }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
 
       - name: Guardar cambios en el Repo
         run: |

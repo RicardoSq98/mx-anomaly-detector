@@ -5,6 +5,8 @@ from pyspark.sql import SparkSession
 from pyspark.sql.window import Window
 import pyspark.sql.functions as F
 from pyspark.sql.functions import col, to_date, abs, when, avg as _avg, stddev as _std
+import google.generativeai as genai
+import json
 
 # 1. INICIALIZAR SPARK (Configuración para GitHub Actions)
 spark = SparkSession.builder \
@@ -64,3 +66,33 @@ df_final = df_stats.withColumn(
 df_final.toPandas().to_parquet("datos_anomalias.parquet")
 
 print("Pipeline ejecutado con éxito. Archivo datos_anomalias.parquet actualizado.")
+
+# Configurar la IA
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+model = genai.GenerativeModel('gemini-pro')
+
+def obtener_explicacion_ia(fecha, valor):
+    prompt = f"""
+    Actúa como un analista financiero Senior. 
+    El tipo de cambio USD/MXN tuvo una anomalía el día {fecha} llegando a {valor}.
+    Busca en tu base de datos qué eventos macroeconómicos o políticos ocurrieron en esa fecha 
+    y dame un resumen de máximo 12 palabras de por qué se disparó el dólar. 
+    Sé muy directo. Ejemplo: 'Incertidumbre por elecciones y alza en tasas de la FED.'
+    """
+    try:
+        response = model.generate_content(prompt)
+        return response.text
+    except:
+        return "Volatilidad de mercado por factores externos."
+
+# Si detectamos anomalías hoy, generamos el JSON de noticias
+anomalias_recientes = df_final.filter(F.col("es_anomalia") == 1).sort(F.col("fecha").desc()).limit(5).collect()
+
+noticias_dict = {}
+for row in anomalias_recientes:
+    fecha_str = row['fecha'].strftime('%Y-%m-%d')
+    noticias_dict[fecha_str] = obtener_explicacion_ia(fecha_str, row['tipo_cambio'])
+
+# Guardar para que Streamlit lo lea
+with open("noticias_contexto.json", "w") as f:
+    json.dump(noticias_dict, f)
