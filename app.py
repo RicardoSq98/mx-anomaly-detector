@@ -2,66 +2,102 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-st.set_page_config(page_title="Monitor de Anomalías MX", layout="wide")
+# 1. Configuración de la página
+st.set_page_config(
+    page_title="Monitor de Anomalías MX - Spark",
+    page_icon="🇲🇽",
+    layout="wide"
+)
 
-st.title("🇲🇽 Detector de Anomalías: Tipo de Cambio")
-st.markdown("Este sistema monitorea en tiempo real el tipo de cambio USD/MXN utilizando la API de Banxico. No es una simple gráfica; es un ecosistema que detecta automáticamente crisis financieras o movimientos atípicos (anomalías) mediante estadística avanzada y procesamiento distribuido.")
-
-# LEER PARQUET (Asegúrate de que el nombre coincida con el archivo que subas)
-# Si el archivo está en tu repo, pon el nombre directo:
+# 2. Carga de datos con Cache para velocidad
 @st.cache_data
 def load_data():
-    # Buscamos el archivo .parquet que descargaste de Drive
-    return pd.read_parquet("datos_anomalias.parquet")
+    # Lee el archivo que genera tu robot de Spark
+    df = pd.read_parquet("datos_anomalias.parquet")
+    df['fecha'] = pd.to_datetime(df['fecha'])
+    # Ordenamos por fecha para que los cálculos de "último vs anterior" sean correctos
+    return df.sort_values("fecha")
 
-df = load_data()
-df['fecha'] = pd.to_datetime(df['fecha'])
+# Intentar cargar los datos
+try:
+    df = load_data()
 
-# Título principal
-st.title("🇲🇽 Monitor Inteligente: USD/MXN")
-
-# Crear 3 columnas para el resumen rápido
-col1, col2, col3 = st.columns(3)
-
-# Supongamos que 'df' es tu DataFrame de Spark cargado
-ultimo_precio = df.sort_values("fecha").iloc[-1]["tipo_cambio"]
-precio_anterior = df.sort_values("fecha").iloc[-2]["tipo_cambio"]
-delta = ultimo_precio - precio_anterior
-
-with col1:
-    st.metric("Precio Actual", f"${ultimo_precio:.2f}", f"{delta:.4f}")
-
-with col2:
-    total_anomalias = df[df["es_anomalia"] == 1].shape[0]
-    st.metric("Anomalías Detectadas", total_anomalias)
-
-with col3:
-    # Fecha de la última actualización
-    ultima_fecha = df["fecha"].max()
-    st.metric("Última Actualización", str(ultima_fecha))
-
-with st.expander("ℹ️ ¿Cómo funciona este monitor? (Resumen Técnico)"):
-    st.write("""
-    Este sistema utiliza **Apache Spark** para procesar el histórico del tipo de cambio de Banxico. 
-    Aplica un modelo estadístico de **Z-Score** para identificar variaciones fuera de lo común.
-    
-    * **Anomalía (Puntos Rojos):** Ocurre cuando el cambio diario supera las **3 desviaciones estándar**.
-    * **Automatización:** Los datos se actualizan solos cada mañana a las 8:00 AM mediante **GitHub Actions**.
-    * **Tecnología:** PySpark, Parquet y Python 3.11.
+    # 3. Encabezado Principal
+    st.title("🇲🇽 Detector de Anomalías: Tipo de Cambio USD/MXN")
+    st.markdown("""
+    Este sistema monitorea en tiempo real el tipo de cambio utilizando la API de Banxico. 
+    No es una simple gráfica; es un ecosistema que detecta automáticamente movimientos atípicos 
+    mediante **Apache Spark** y estadística avanzada (**Z-Score**).
     """)
 
-# Gráfica Interactiva
-fig = px.line(df, x='fecha', y='tipo_cambio', title='Histórico USD/MXN con Anomalías')
-anomalias = df[df['es_anomalia'] == 1]
-fig.add_scatter(x=anomalias['fecha'], y=anomalias['tipo_cambio'], 
-                mode='markers', name='Anomalía', marker=dict(color='red', size=8))
+    # 4. Sección de Métricas (KPIs)
+    st.divider()
+    col1, col2, col3 = st.columns(3)
 
-st.plotly_chart(fig, use_container_width=True)
+    # Cálculos para las métricas
+    ultimo_registro = df.iloc[-1]
+    penultimo_registro = df.iloc[-2]
+    
+    ultimo_precio = ultimo_registro["tipo_cambio"]
+    delta_precio = ultimo_precio - penultimo_registro["tipo_cambio"]
+    total_anomalias = df[df["es_anomalia"] == 1].shape[0]
+    ultima_fecha = df["fecha"].max().strftime('%d/%m/%Y')
 
-st.subheader("🚨 Historial de Alertas Recientes")
-df_anomalos = df[df["es_anomalia"] == 1].sort_values("fecha", ascending=False).head(5)
+    with col1:
+        st.metric("Precio Actual (FIX)", f"${ultimo_precio:.4f}", f"{delta_precio:.4f}")
 
-if not df_anomalos.empty:
-    st.table(df_anomalos[["fecha", "tipo_cambio", "z_score_final"]])
-else:
-    st.write("No se han detectado anomalías en el periodo seleccionado.")
+    with col2:
+        st.metric("Anomalías Detectadas", f"{total_anomalias} eventos", "Histórico")
+
+    with col3:
+        st.metric("Última Actualización", ultima_fecha, "Robot Activo ✅")
+
+    # 5. Resumen Técnico (Expander)
+    with st.expander("ℹ️ ¿Cómo funciona la detección inteligente?"):
+        st.write("""
+        **Arquitectura del Pipeline:**
+        * **Procesamiento:** El motor **Apache Spark** calcula la media y desviación estándar móvil.
+        * **Z-Score:** Se marca una anomalía cuando el cambio diario se aleja más de **3 desviaciones estándar** ($$Z > 3$$).
+        * **Automatización:** El proceso corre solo cada mañana mediante **GitHub Actions**.
+        * **Almacenamiento:** Los datos se guardan en formato **Parquet** para máxima eficiencia.
+        """)
+
+    # 6. Gráfica Interactiva con Plotly
+    st.subheader("📈 Análisis de Volatilidad Histórica")
+    
+    fig = px.line(df, x='fecha', y='tipo_cambio', 
+                  title='Evolución del Peso Mexicano vs Dólar',
+                  labels={'tipo_cambio': 'Precio (MXN)', 'fecha': 'Fecha'})
+    
+    # Agregar los puntos rojos de las anomalías
+    anomalias = df[df['es_anomalia'] == 1]
+    fig.add_scatter(x=anomalias['fecha'], y=anomalias['tipo_cambio'], 
+                    mode='markers', name='Anomalía Crítica', 
+                    marker=dict(color='red', size=9, symbol='x'))
+
+    # Mejorar el diseño de la gráfica
+    fig.update_layout(hovermode="x unified", template="plotly_white")
+    st.plotly_chart(fig, use_container_width=True)
+
+    # 7. Tabla de Alertas Recientes
+    st.subheader("🚨 Historial de Alertas Recientes")
+    df_alertas = df[df["es_anomalia"] == 1].sort_values("fecha", ascending=False).head(5)
+
+    if not df_alertas.empty:
+        # Formateamos la tabla para que se vea limpia
+        st.dataframe(
+            df_alertas[["fecha", "tipo_cambio", "z_score_final"]].style.format({
+                "tipo_cambio": "{:.4f}",
+                "z_score_final": "{:.2f}"
+            }),
+            use_container_width=True
+        )
+    else:
+        st.info("No se han detectado anomalías en el periodo actual.")
+
+except Exception as e:
+    st.error(f"Esperando datos del robot de Spark... (Error: {e})")
+    st.info("Asegúrate de que el archivo 'datos_anomalias.parquet' exista en tu repositorio.")
+
+# Pie de página
+st.caption("Proyecto de Ingeniería de Datos | Apache Spark + GitHub Actions + Streamlit")
