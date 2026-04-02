@@ -21,8 +21,7 @@ URL = f'https://www.banxico.org.mx/SieAPIRest/service/v1/series/{SERIE}/datos'
 # 3. LA FUNCIÓN (Cópiala tal cual para que no falte)
 def obtener_explicacion_ia(fecha, valor):
     token = os.getenv("HF_TOKEN")
-    # Usamos Mistral 7B, un modelo muy potente y abierto
-    API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
+    API_URL = "https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.2"
     headers = {"Authorization": f"Bearer {token}"}
 
     prompt = f"<s>[INST] Eres un analista financiero. El {fecha} el dólar llegó a {valor} MXN. Responde en 8 palabras en español por qué hubo esa anomalía. [/INST]"
