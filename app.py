@@ -121,7 +121,7 @@ try:
 
     # 7. Tabla de Alertas Recientes
     st.subheader("🚨 Historial de Alertas Recientes")
-    df_alertas = df[df["es_anomalia"] == 1].sort_values("fecha", ascending=False).head(5)
+    df_alertas = df[df["es_anomalia"] == 1].sort_values("fecha", ascending=False).head(10)
 
     if not df_alertas.empty:
         st.dataframe(
