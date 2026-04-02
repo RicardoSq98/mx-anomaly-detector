@@ -81,7 +81,8 @@ try:
         mode='markers', 
         name='Alerta IA', 
         marker=dict(color='#FF4B4B', size=10, symbol='circle'),
-        custom_data=anomalias[['analisis_ia']],
+        # EL CAMBIO ESTÁ AQUÍ: debe decir 'customdata' (todo junto)
+        customdata=anomalias[['analisis_ia']],
         hovertemplate="<b>Fecha:</b> %{x}<br>" +
                       "<b>Precio:</b> %{y:.4f}<br>" +
                       "<b>IA:</b> %{customdata[0]}<extra></extra>"
