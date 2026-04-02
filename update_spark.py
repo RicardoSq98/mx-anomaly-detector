@@ -21,37 +21,33 @@ URL = f'https://www.banxico.org.mx/SieAPIRest/service/v1/series/{SERIE}/datos'
 # 3. LA FUNCIÓN (Cópiala tal cual para que no falte)
 def obtener_explicacion_ia(fecha, valor):
     token = os.getenv("HF_TOKEN")
-    # Esta es la URL del nuevo Router configurada para modo chat (más estable)
-    API_URL = "https://router.huggingface.co/hf-inference/v1/chat/completions"
+    # Usamos GPT2: Es un modelo pequeño que SIEMPRE está disponible
+    API_URL = "https://api-inference.huggingface.co/models/openai-community/gpt2"
     
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json"
-    }
-
-    # Cambiamos el formato del mensaje al estilo 'chat' que pide el nuevo Router
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    # Prompt ultra simple
+    prompt = f"El {fecha} el dolar subio a {valor} por"
+    
     payload = {
-        "model": "mistralai/Mistral-7B-Instruct-v0.2",
-        "messages": [
-            {"role": "user", "content": f"Explica en 8 palabras en español por qué el dólar llegó a {valor} el {fecha}."}
-        ],
-        "max_tokens": 50
+        "inputs": prompt,
+        "parameters": {"max_new_tokens": 10}
     }
 
     try:
-        response = requests.post(API_URL, headers=headers, json=payload, timeout=30)
+        response = requests.post(API_URL, headers=headers, json=payload, timeout=20)
         
         if response.status_code != 200:
-            print(f"Error de Servidor ({response.status_code}): {response.text}")
-            return "Movimiento por volatilidad de mercados."
+            # Si falla, devolvemos un mensaje genérico para que el script NO se detenga
+            print(f"Fallo IA ({response.status_code}): {response.text}")
+            return "Variación por condiciones de mercado externo."
 
         res_json = response.json()
-        # Extraemos la respuesta del formato chat
-        return res_json['choices'][0]['message']['content'].strip()
+        # GPT2 devuelve una estructura simple
+        return res_json[0]['generated_text'].replace(prompt, "").strip()
             
-    except Exception as e:
-        print(f"Error técnico: {e}")
-        return "Ajuste técnico por condiciones macro."
+    except:
+        return "Movimiento técnico del tipo de cambio."
 
 # 4. INGESTA DE DATOS
 headers = {'Bmx-Token': TOKEN}
