@@ -18,11 +18,6 @@ TOKEN = os.getenv("BANXICO_TOKEN")
 SERIE = 'SF43718' 
 URL = f'https://www.banxico.org.mx/SieAPIRest/service/v1/series/{SERIE}/datos'
 
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-
-# Usamos el modelo 1.5-flash, el nombre estándar
-model = genai.GenerativeModel('gemini-1.5-flash')
-
 # 3. LA FUNCIÓN (Cópiala tal cual para que no falte)
 def obtener_explicacion_ia(fecha, valor):
     token = os.getenv("HF_TOKEN")
