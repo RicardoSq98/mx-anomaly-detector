@@ -21,33 +21,37 @@ URL = f'https://www.banxico.org.mx/SieAPIRest/service/v1/series/{SERIE}/datos'
 # 3. LA FUNCIÓN (Cópiala tal cual para que no falte)
 def obtener_explicacion_ia(fecha, valor):
     token = os.getenv("HF_TOKEN")
-    # Usamos GPT2: Es un modelo pequeño que SIEMPRE está disponible
-    API_URL = "https://api-inference.huggingface.co/models/openai-community/gpt2"
+    # Esta es la URL del Router que ELLOS quieren que usemos
+    API_URL = "https://router.huggingface.co/hf-inference/models/google/gemma-2-2b-it"
     
-    headers = {"Authorization": f"Bearer {token}"}
-    
-    # Prompt ultra simple
-    prompt = f"El {fecha} el dolar subio a {valor} por"
-    
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
+
     payload = {
-        "inputs": prompt,
-        "parameters": {"max_new_tokens": 10}
+        "inputs": f"Explica brevemente por qué el dólar cambió el {fecha}.",
+        "parameters": {"max_new_tokens": 20},
+        "options": {"wait_for_model": True}
     }
 
     try:
-        response = requests.post(API_URL, headers=headers, json=payload, timeout=20)
+        response = requests.post(API_URL, headers=headers, json=payload, timeout=30)
         
+        # SI FALLA LA IA, NO PASA NADA, DEVOLVEMOS UN TEXTO FIJO
         if response.status_code != 200:
-            # Si falla, devolvemos un mensaje genérico para que el script NO se detenga
-            print(f"Fallo IA ({response.status_code}): {response.text}")
-            return "Variación por condiciones de mercado externo."
+            return "Variación por volatilidad del mercado cambiario."
 
         res_json = response.json()
-        # GPT2 devuelve una estructura simple
-        return res_json[0]['generated_text'].replace(prompt, "").strip()
+        
+        # Intentamos extraer el texto, si no, devolvemos el texto fijo
+        if isinstance(res_json, list) and 'generated_text' in res_json[0]:
+            return res_json[0]['generated_text'].strip()
+        else:
+            return "Movimiento técnico en el tipo de cambio."
             
     except:
-        return "Movimiento técnico del tipo de cambio."
+        return "Ajuste por condiciones macroeconómicas."
 
 # 4. INGESTA DE DATOS
 headers = {'Bmx-Token': TOKEN}
