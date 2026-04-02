@@ -21,39 +21,42 @@ URL = f'https://www.banxico.org.mx/SieAPIRest/service/v1/series/{SERIE}/datos'
 # 3. FUNCIÓN DE IA MEJORADA (Prompt de Ingeniería)
 def obtener_explicacion_ia(fecha, valor):
     token = os.getenv("HF_TOKEN")
-    API_URL = "https://router.huggingface.co/hf-inference/models/meta-llama/Llama-3.2-1B-Instruct"
     
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    # URL Directa de Mistral (Más estable que Llama en el Router)
+    API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3"
     
-    # Prompt simplificado para asegurar respuesta
-    prompt_f = f"Explain in one short sentence why the USD/MXN exchange rate changed on {fecha}."
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
+    
+    # Prompt sencillo en inglés (Mistral entiende mejor inglés para buscar noticias)
+    prompt = f"In one short sentence, explain why the USD/MXN exchange rate had a spike on {fecha}."
 
     payload = {
-        "inputs": prompt_f,
-        "parameters": {"max_new_tokens": 50, "return_full_text": False},
+        "inputs": f"<s>[INST] {prompt} [/INST]",
+        "parameters": {"max_new_tokens": 50, "temperature": 0.1},
         "options": {"wait_for_model": True}
     }
 
     try:
         response = requests.post(API_URL, headers=headers, json=payload, timeout=40)
-        
-        # LOG DE DEBUG (Esto lo verás en GitHub Actions)
         print(f"DEBUG [{fecha}]: Status {response.status_code}")
         
-        if response.status_code != 200:
-            print(f"ERROR DETAIL: {response.text}")
-            return f"Error de conexión (Código {response.status_code})"
-
-        res_json = response.json()
-        
-        if isinstance(res_json, list) and len(res_json) > 0:
-            return res_json[0].get('generated_text', "Sin texto generado").strip()
+        if response.status_code == 200:
+            res_json = response.json()
+            # Mistral devuelve una lista con un diccionario
+            texto = res_json[0].get('generated_text', "")
+            # Quitamos el prompt de la respuesta
+            respuesta = texto.split("[/INST]")[-1].strip()
+            return respuesta if respuesta else "Variación por volatilidad del mercado."
         else:
-            return "Respuesta inesperada de la IA."
+            print(f"ERROR DETAIL: {response.text}")
+            return "Movimiento técnico en el tipo de cambio."
             
     except Exception as e:
         print(f"EXCEPTION: {str(e)}")
-        return "Fallo técnico en la consulta."
+        return "Error de conexión con el motor de IA."
 
 # 4. INGESTA DE DATOS (Banxico)
 headers = {'Bmx-Token': TOKEN}
