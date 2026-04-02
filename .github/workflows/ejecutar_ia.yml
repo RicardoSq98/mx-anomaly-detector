@@ -3,7 +3,7 @@ name: Pipeline Automático Spark e IA
 on:
   workflow_dispatch: # Permite ejecutarlo manualmente desde la pestaña Actions
   schedule:
-    - cron: '0 0 * * *' # Se ejecuta solo cada medianoche (opcional)
+    - cron: '0 * * * *' # Se ejecuta solo cada medianoche (opcional)
 
 jobs:
   build:
