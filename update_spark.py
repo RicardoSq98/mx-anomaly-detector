@@ -16,41 +16,30 @@ SERIE = 'SF43718'
 URL = f'https://www.banxico.org.mx/SieAPIRest/service/v1/series/{SERIE}/datos'
 
 # 3. FUNCIÓN DE IA (Con la URL que el Router SI acepta)
+from huggingface_hub import InferenceClient
+
 def obtener_explicacion_ia(fecha, valor):
     token = os.getenv("HF_TOKEN")
     
-    # Esta es la URL del Router que Hugging Face exige ahora
-    API_URL = "https://router.huggingface.co/hf-inference/v1/chat/completions"
+    # El cliente oficial se encarga de conectar con el Router correcto
+    client = InferenceClient(api_key=token)
     
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json"
-    }
-    
-    # Cambiamos a formato de Chat para mayor estabilidad en el Router
-    payload = {
-        "model": "mistralai/Mistral-7B-Instruct-v0.3",
-        "messages": [
-            {"role": "user", "content": f"Explica en una oración corta por qué el dólar cambió el {fecha}."}
-        ],
-        "max_tokens": 50
-    }
+    prompt = f"Explain in one short sentence why the USD/MXN exchange rate had a spike on {fecha}."
 
     try:
-        response = requests.post(API_URL, headers=headers, json=payload, timeout=40)
+        # Usamos el modelo de Meta que es el más robusto
+        response = client.chat.completions.create(
+            model="meta-llama/Llama-3.2-1B-Instruct",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=50
+        )
         
-        if response.status_code == 200:
-            res_json = response.json()
-            # Extraemos la respuesta del formato Chat
-            return res_json['choices'][0]['message']['content'].strip()
-        else:
-            # Si da error, imprimimos para ver en los logs de GitHub
-            print(f"DEBUG [{fecha}]: Status {response.status_code} - {response.text}")
-            return "Variación por volatilidad del mercado cambiario."
+        # Si llega aquí, es un Status 200 automático
+        return response.choices[0].message.content.strip()
             
     except Exception as e:
-        print(f"EXCEPTION: {str(e)}")
-        return "Error de conexión con la IA."
+        print(f"DEBUG [{fecha}]: Falló el cliente oficial - {str(e)}")
+        return "Variación por condiciones del mercado."
 
 # 4. INGESTA DE DATOS
 headers = {'Bmx-Token': TOKEN}
