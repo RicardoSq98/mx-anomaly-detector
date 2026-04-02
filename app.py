@@ -83,7 +83,7 @@ try:
                 x=fecha_str, y=y_val,
                 text=f"🤖 {explicacion}",
                 showarrow=True, arrowhead=2, arrowcolor="#FF4B4B",
-                ax=0, ay=-50, bgcolor="white", bordercolor="#FF4B4B",
+                ax=0, ay=-50, bgcolor="orange", bordercolor="#FF4B4B",
                 borderwidth=1, borderpad=4, font=dict(size=12), opacity=0.9
             )
 
