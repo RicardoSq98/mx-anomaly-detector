@@ -2,7 +2,6 @@ import os
 import requests
 import pandas as pd
 import json
-import google.generativeai as genai
 from pyspark.sql import SparkSession
 from pyspark.sql.window import Window
 import pyspark.sql.functions as F
@@ -26,13 +25,33 @@ model = genai.GenerativeModel('gemini-1.5-flash')
 
 # 3. LA FUNCIÓN (Cópiala tal cual para que no falte)
 def obtener_explicacion_ia(fecha, valor):
-    prompt = f"¿Qué evento financiero o político ocurrió el {fecha} que afectó al peso mexicano? Responde en 10 palabras."
+    token = os.getenv("HF_TOKEN")
+    # Usamos Mistral 7B, un modelo muy potente y abierto
+    API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
+    headers = {"Authorization": f"Bearer {token}"}
+
+    prompt = f"<s>[INST] Eres un analista financiero. El {fecha} el dólar llegó a {valor} MXN. Responde en 8 palabras en español por qué hubo esa anomalía. [/INST]"
+    
+    payload = {
+        "inputs": prompt,
+        "parameters": {"max_new_tokens": 50, "return_full_text": False}
+    }
+
     try:
-        response = model.generate_content(prompt)
-        return response.text.strip()
+        response = requests.post(API_URL, headers=headers, json=payload)
+        res_json = response.json()
+        
+        # Hugging Face devuelve una lista con el texto
+        if isinstance(res_json, list) and 'generated_text' in res_json[0]:
+            texto = res_json[0]['generated_text'].strip()
+            return texto
+        else:
+            print(f"Error HF: {res_json}")
+            return "Ajuste técnico por volatilidad global."
+            
     except Exception as err:
-        print(f"Error en Gemini para {fecha}: {err}")
-        return "Movimiento por volatilidad de mercado."
+        print(f"Error de conexión HF: {err}")
+        return "Movimiento de mercado estándar."
 
 # 4. INGESTA DE DATOS
 headers = {'Bmx-Token': TOKEN}
