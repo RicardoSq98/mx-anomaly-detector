@@ -47,3 +47,9 @@ jobs:
           # Hacemos commit y push forzado para evitar conflictos de historial
           git commit -m "Actualización automática: $(date)" || echo "Sin cambios para commitear"
           git push origin main --force
+
+      - name: Enviar Alerta a Telegram
+        run: |
+                curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage \
+                -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+                -d text="🚀 ¡Hola Ricardo! El pipeline de Spark terminó. Llama 3 ya analizó el dólar. 📊 Revisa tu App aquí: [https://mx-anomaly-detector-r9dzbqmczcahqbpzhwqyz2.streamlit.app/]"
