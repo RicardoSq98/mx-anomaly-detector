@@ -21,50 +21,39 @@ URL = f'https://www.banxico.org.mx/SieAPIRest/service/v1/series/{SERIE}/datos'
 # 3. FUNCIÓN DE IA MEJORADA (Prompt de Ingeniería)
 def obtener_explicacion_ia(fecha, valor):
     token = os.getenv("HF_TOKEN")
-    # Usamos el modelo Llama 3.2-1B Instruct para mejores respuestas
-    API_URL = "https://router.huggingface.co/hf-inference/models/meta-llama/Llama-3.2-1B-Instruct"
+    API_URL = "https://api-inference.huggingface.co/models/meta-llama/Llama-3.2-1B-Instruct"
     
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json"
-    }
-
-    # Prompt formateado para que la IA entienda que es un analista financiero
-    prompt_f = (
-        f"<|begin_of_text|><|start_header_id|>user<|end_header_id|>\n\n"
-        f"Analiza brevemente: ¿Qué evento económico o político causó volatilidad en el peso mexicano el {fecha}? "
-        f"Responde en una sola oración corta y profesional.<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
-    )
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    
+    # Prompt simplificado para asegurar respuesta
+    prompt_f = f"Explain in one short sentence why the USD/MXN exchange rate changed on {fecha}."
 
     payload = {
         "inputs": prompt_f,
-        "parameters": {
-            "max_new_tokens": 50,
-            "temperature": 0.7,
-            "stop": ["<|eot_id|>"]
-        },
+        "parameters": {"max_new_tokens": 50, "return_full_text": False},
         "options": {"wait_for_model": True}
     }
 
     try:
-        response = requests.post(API_URL, headers=headers, json=payload, timeout=30)
+        response = requests.post(API_URL, headers=headers, json=payload, timeout=40)
+        
+        # LOG DE DEBUG (Esto lo verás en GitHub Actions)
+        print(f"DEBUG [{fecha}]: Status {response.status_code}")
         
         if response.status_code != 200:
-            return "Variación por volatilidad del mercado cambiario."
+            print(f"ERROR DETAIL: {response.text}")
+            return f"Error de conexión (Código {response.status_code})"
 
         res_json = response.json()
         
-        if isinstance(res_json, list) and 'generated_text' in res_json[0]:
-            # Limpiamos el texto generado para quitar el prompt
-            full_text = res_json[0]['generated_text']
-            # Extraemos solo lo que respondió el asistente después del tag
-            respuesta = full_text.split("<|start_header_id|>assistant<|end_header_id|>")[-1].strip()
-            return respuesta if respuesta else "Movimiento técnico en el tipo de cambio."
+        if isinstance(res_json, list) and len(res_json) > 0:
+            return res_json[0].get('generated_text', "Sin texto generado").strip()
         else:
-            return "Movimiento técnico en el tipo de cambio."
+            return "Respuesta inesperada de la IA."
             
-    except:
-        return "Ajuste por condiciones macroeconómicas."
+    except Exception as e:
+        print(f"EXCEPTION: {str(e)}")
+        return "Fallo técnico en la consulta."
 
 # 4. INGESTA DE DATOS (Banxico)
 headers = {'Bmx-Token': TOKEN}
