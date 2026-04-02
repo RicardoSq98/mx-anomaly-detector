@@ -58,40 +58,57 @@ try:
         **Arquitectura del Pipeline:**
         * **Procesamiento:** El motor **Apache Spark** calcula la media y desviación estándar móvil.
         * **Z-Score:** Se marca anomalía si el cambio diario supera **3 desviaciones estándar**.
-        * **IA Contextual:** Llama 3 / Mistral analiza eventos macroeconómicos en las fechas de los picos.
+        * **IA Contextual:** Llama 3 analiza eventos macroeconómicos en las fechas de los picos.
         """)
 
-    # 6. Gráfica Interactiva con Plotly (CONFIGURACIÓN DE HOVER)
+    # 6. Gráfica Interactiva con Plotly (SÍMBOLOS DISTINTIVOS)
     st.subheader("📈 Análisis con IA de Anomalías USD/MXN")
     
-    # Mapeamos las noticias al DataFrame para que estén disponibles en el hover
+    # Identificar cuáles tienen nota y cuáles no
     df['analisis_ia'] = df['fecha'].dt.date.astype(str).map(noticias_contexto).fillna("Sin eventos reportados")
+    df['tiene_nota'] = df['analisis_ia'].apply(lambda x: 1 if x != "Sin eventos reportados" else 0)
 
-    # Creamos la línea base
+    # Línea base del tipo de cambio
     fig = px.line(df, x='fecha', y='tipo_cambio', 
-                  labels={'tipo_cambio': 'Precio (MXN)', 'fecha': 'Fecha', 'analisis_ia': 'Análisis IA'},
-                  hover_data={'fecha': True, 'tipo_cambio': ':.4f', 'analisis_ia': True})
+                  labels={'tipo_cambio': 'Precio (MXN)', 'fecha': 'Fecha', 'analisis_ia': 'Análisis IA'})
     
-    # Agregamos los puntos rojos (Anomalías) con un Hover especial
-    anomalias = df[df['es_anomalia'] == 1].copy()
-    
+    # SEPARAR GRUPOS PARA EL DISTINTIVO
+    anomalias_con_nota = df[(df['es_anomalia'] == 1) & (df['tiene_nota'] == 1)].copy()
+    anomalias_sin_nota = df[(df['es_anomalia'] == 1) & (df['tiene_nota'] == 0)].copy()
+
+    # 1. Capa de Anomalías SIN NOTA (Puntos rojos normales)
     fig.add_scatter(
-        x=anomalias['fecha'], 
-        y=anomalias['tipo_cambio'], 
+        x=anomalias_sin_nota['fecha'], 
+        y=anomalias_sin_nota['tipo_cambio'], 
         mode='markers', 
-        name='Alerta IA', 
-        marker=dict(color='#FF4B4B', size=10, symbol='circle'),
-        # EL CAMBIO ESTÁ AQUÍ: debe decir 'customdata' (todo junto)
-        customdata=anomalias[['analisis_ia']],
-        hovertemplate="<b>Fecha:</b> %{x}<br>" +
-                      "<b>Precio:</b> %{y:.4f}<br>" +
-                      "<b>IA:</b> %{customdata[0]}<extra></extra>"
+        name='Anomalía Detectada', 
+        marker=dict(color='#FF4B4B', size=8, symbol='circle'),
+        customdata=anomalias_sin_nota[['analisis_ia']],
+        hovertemplate="<b>Fecha:</b> %{x}<br><b>Precio:</b> %{y:.4f}<extra></extra>"
     )
 
-    # Ajustes de diseño para que sea legible
+    # 2. Capa de Anomalías CON NOTA (ESTRELLAS GRANDES)
+    fig.add_scatter(
+        x=anomalias_con_nota['fecha'], 
+        y=anomalias_con_nota['tipo_cambio'], 
+        mode='markers', 
+        name='Alerta con Análisis IA', 
+        marker=dict(
+            color='#FFD700',  # Dorado / Amarillo
+            size=14, 
+            symbol='star',
+            line=dict(color='red', width=1)
+        ),
+        customdata=anomalias_con_nota[['analisis_ia']],
+        hovertemplate="<b>Fecha:</b> %{x}<br>" +
+                      "<b>Precio:</b> %{y:.4f}<br>" +
+                      "<b>💡 Nota IA:</b> %{customdata[0]}<extra></extra>"
+    )
+
+    # Ajustes de diseño
     fig.update_layout(
         hovermode="closest",
-        template="plotly_dark", # Cambiado a oscuro para que resalte el rojo
+        template="plotly_dark",
         hoverlabel=dict(
             bgcolor="white",
             font_size=12,
