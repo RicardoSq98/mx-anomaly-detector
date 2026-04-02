@@ -47,10 +47,10 @@ try:
     with col3:
         st.metric("Última Actualización", ultima_fecha, "Robot Activo ✅")
 
-    # 5. Cargar contexto de la IA y mostrar Expander técnico
+    # 5. Cargar contexto de la IA
     noticias_contexto = {}
     if os.path.exists("noticias_contexto.json"):
-        with open("noticias_contexto.json", "r") as f:
+        with open("noticias_contexto.json", "r", encoding='utf-8') as f:
             noticias_contexto = json.load(f)
 
     with st.expander("ℹ️ ¿Cómo funciona la detección inteligente?"):
@@ -58,36 +58,47 @@ try:
         **Arquitectura del Pipeline:**
         * **Procesamiento:** El motor **Apache Spark** calcula la media y desviación estándar móvil.
         * **Z-Score:** Se marca anomalía si el cambio diario supera **3 desviaciones estándar**.
-        * **IA Contextual:** Gemini analiza eventos macroeconómicos en las fechas de los picos.
+        * **IA Contextual:** Llama 3 / Mistral analiza eventos macroeconómicos en las fechas de los picos.
         """)
 
-    # 6. Gráfica Interactiva con Plotly
+    # 6. Gráfica Interactiva con Plotly (CONFIGURACIÓN DE HOVER)
     st.subheader("📈 Análisis con IA de Anomalías USD/MXN")
     
+    # Mapeamos las noticias al DataFrame para que estén disponibles en el hover
+    df['analisis_ia'] = df['fecha'].dt.date.astype(str).map(noticias_contexto).fillna("Sin eventos reportados")
+
+    # Creamos la línea base
     fig = px.line(df, x='fecha', y='tipo_cambio', 
-                  labels={'tipo_cambio': 'Precio (MXN)', 'fecha': 'Fecha'})
+                  labels={'tipo_cambio': 'Precio (MXN)', 'fecha': 'Fecha', 'analisis_ia': 'Análisis IA'},
+                  hover_data={'fecha': True, 'tipo_cambio': ':.4f', 'analisis_ia': True})
     
-    # Agregar los puntos rojos de las anomalías
-    anomalias = df[df['es_anomalia'] == 1]
-    fig.add_scatter(x=anomalias['fecha'], y=anomalias['tipo_cambio'], 
-                    mode='markers', name='Anomalía', marker=dict(color='red', size=9))
+    # Agregamos los puntos rojos (Anomalías) con un Hover especial
+    anomalias = df[df['es_anomalia'] == 1].copy()
+    
+    fig.add_scatter(
+        x=anomalias['fecha'], 
+        y=anomalias['tipo_cambio'], 
+        mode='markers', 
+        name='Alerta IA', 
+        marker=dict(color='#FF4B4B', size=10, symbol='circle'),
+        custom_data=anomalias[['analisis_ia']],
+        hovertemplate="<b>Fecha:</b> %{x}<br>" +
+                      "<b>Precio:</b> %{y:.4f}<br>" +
+                      "<b>IA:</b> %{customdata[0]}<extra></extra>"
+    )
 
-    # --- AGREGAR EXPLICACIONES DE LA IA ---
-    for fecha_str, explicacion in noticias_contexto.items():
-        fecha_dt = pd.to_datetime(fecha_str)
-        puntos_fecha = df[df['fecha'] == fecha_dt]
-        
-        if not puntos_fecha.empty:
-            y_val = puntos_fecha['tipo_cambio'].iloc[0]
-            fig.add_annotation(
-                x=fecha_str, y=y_val,
-                text=f"🤖 {explicacion}",
-                showarrow=True, arrowhead=2, arrowcolor="#FF4B4B",
-                ax=0, ay=-50, bgcolor="orange", bordercolor="#FF4B4B",
-                borderwidth=1, borderpad=4, font=dict(size=12), opacity=0.9
-            )
+    # Ajustes de diseño para que sea legible
+    fig.update_layout(
+        hovermode="closest",
+        template="plotly_dark", # Cambiado a oscuro para que resalte el rojo
+        hoverlabel=dict(
+            bgcolor="white",
+            font_size=12,
+            font_family="Arial",
+            font_color="black"
+        )
+    )
 
-    fig.update_layout(hovermode="x unified", template="plotly_white")
     st.plotly_chart(fig, use_container_width=True)
 
     # 7. Tabla de Alertas Recientes
@@ -96,7 +107,7 @@ try:
 
     if not df_alertas.empty:
         st.dataframe(
-            df_alertas[["fecha", "tipo_cambio", "z_score_final"]].style.format({
+            df_alertas[["fecha", "tipo_cambio", "z_score_final", "analisis_ia"]].style.format({
                 "tipo_cambio": "{:.4f}",
                 "z_score_final": "{:.2f}"
             }),
@@ -109,4 +120,4 @@ try:
 except Exception as e:
     st.error(f"Error al cargar la App: {e}")
 
-st.caption("Proyecto de Ingeniería de Datos | Apache Spark + Gemini IA + GitHub Actions")
+st.caption("Proyecto de Ingeniería de Datos | Apache Spark + Llama 3 IA + GitHub Actions")
