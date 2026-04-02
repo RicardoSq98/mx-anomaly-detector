@@ -21,40 +21,37 @@ URL = f'https://www.banxico.org.mx/SieAPIRest/service/v1/series/{SERIE}/datos'
 # 3. LA FUNCIÓN (Cópiala tal cual para que no falte)
 def obtener_explicacion_ia(fecha, valor):
     token = os.getenv("HF_TOKEN")
-    # URL DEFINITIVA para el Inference API (con el nuevo router)
-    API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
+    # Esta es la URL del nuevo Router configurada para modo chat (más estable)
+    API_URL = "https://router.huggingface.co/hf-inference/v1/chat/completions"
     
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json"
     }
 
-    prompt = f"<s>[INST] Eres un experto financiero. El {fecha} el dólar llegó a {valor} MXN. Explica en 8 palabras en español por qué hubo esa anomalía. [/INST]"
-    
+    # Cambiamos el formato del mensaje al estilo 'chat' que pide el nuevo Router
     payload = {
-        "inputs": prompt,
-        "parameters": {"max_new_tokens": 50},
-        "options": {"wait_for_model": True} # <--- ESTO obliga a HF a esperar a que el modelo despierte
+        "model": "mistralai/Mistral-7B-Instruct-v0.2",
+        "messages": [
+            {"role": "user", "content": f"Explica en 8 palabras en español por qué el dólar llegó a {valor} el {fecha}."}
+        ],
+        "max_tokens": 50
     }
 
     try:
         response = requests.post(API_URL, headers=headers, json=payload, timeout=30)
         
-        # Si no es un 200 (éxito), imprimimos qué pasó
         if response.status_code != 200:
             print(f"Error de Servidor ({response.status_code}): {response.text}")
-            return "Ajuste por factores macroeconómicos."
+            return "Movimiento por volatilidad de mercados."
 
         res_json = response.json()
-        
-        if isinstance(res_json, list) and 'generated_text' in res_json[0]:
-            return res_json[0]['generated_text'].strip()
-        else:
-            return "Volatilidad de mercado por eventos externos."
+        # Extraemos la respuesta del formato chat
+        return res_json['choices'][0]['message']['content'].strip()
             
     except Exception as e:
         print(f"Error técnico: {e}")
-        return "Movimiento de mercado estándar."
+        return "Ajuste técnico por condiciones macro."
 
 # 4. INGESTA DE DATOS
 headers = {'Bmx-Token': TOKEN}
