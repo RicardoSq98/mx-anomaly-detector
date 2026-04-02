@@ -20,26 +20,19 @@ SERIE = 'SF43718'
 URL = f'https://www.banxico.org.mx/SieAPIRest/service/v1/series/{SERIE}/datos'
 
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-model = genai.GenerativeModel('gemini-pro')
 
-# 3. FUNCIÓN DE IA (La que faltaba, ¡aquí está!)
+# Usamos el modelo 1.5-flash, el nombre estándar
+model = genai.GenerativeModel('gemini-1.5-flash')
+
+# 3. LA FUNCIÓN (Cópiala tal cual para que no falte)
 def obtener_explicacion_ia(fecha, valor):
-    # Prompt más sencillo para evitar filtros de seguridad
-    prompt = f"¿Qué pasó el {fecha} que afectó al peso mexicano? Responde en 8 palabras."
-    
+    prompt = f"¿Qué evento financiero o político ocurrió el {fecha} que afectó al peso mexicano? Responde en 10 palabras."
     try:
-        # Forzamos que use la versión más estable
         response = model.generate_content(prompt)
-        
-        # Si la respuesta está vacía o bloqueada
-        if not response.text:
-            return "Movimiento por flujo de capitales."
-            
         return response.text.strip()
     except Exception as err:
-        # ESTO ES VITAL: Ver el error en los logs de GitHub
-        print(f"❌ ERROR REAL PARA {fecha}: {err}")
-        return "Ajuste técnico de mercado."
+        print(f"Error en Gemini para {fecha}: {err}")
+        return "Movimiento por volatilidad de mercado."
 
 # 4. INGESTA DE DATOS
 headers = {'Bmx-Token': TOKEN}
