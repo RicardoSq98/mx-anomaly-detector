@@ -21,7 +21,7 @@ URL = f'https://www.banxico.org.mx/SieAPIRest/service/v1/series/{SERIE}/datos'
 # 3. FUNCIÓN DE IA MEJORADA (Prompt de Ingeniería)
 def obtener_explicacion_ia(fecha, valor):
     token = os.getenv("HF_TOKEN")
-    API_URL = "https://api-inference.huggingface.co/models/meta-llama/Llama-3.2-1B-Instruct"
+    API_URL = "https://router.huggingface.co/hf-inference/models/meta-llama/Llama-3.2-1B-Instruct"
     
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     
