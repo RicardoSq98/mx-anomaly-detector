@@ -22,7 +22,7 @@ URL = f'https://www.banxico.org.mx/SieAPIRest/service/v1/series/{SERIE}/datos'
 def obtener_explicacion_ia(fecha, valor):
     token = os.getenv("HF_TOKEN")
     # Esta es la URL del Router que ELLOS quieren que usemos
-    API_URL = "https://router.huggingface.co/hf-inference/models/google/gemma-2-2b-it"
+    API_URL = "https://router.huggingface.co/hf-inference/models/meta-llama/Llama-3.2-1B-Instruct"
     
     headers = {
         "Authorization": f"Bearer {token}",
