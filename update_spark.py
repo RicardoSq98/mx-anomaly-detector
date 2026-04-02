@@ -21,30 +21,39 @@ URL = f'https://www.banxico.org.mx/SieAPIRest/service/v1/series/{SERIE}/datos'
 # 3. LA FUNCIÓN (Cópiala tal cual para que no falte)
 def obtener_explicacion_ia(fecha, valor):
     token = os.getenv("HF_TOKEN")
-    API_URL = "https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.2"
-    headers = {"Authorization": f"Bearer {token}"}
+    # URL DEFINITIVA para el Inference API (con el nuevo router)
+    API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
+    
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
 
-    prompt = f"<s>[INST] Eres un analista financiero. El {fecha} el dólar llegó a {valor} MXN. Responde en 8 palabras en español por qué hubo esa anomalía. [/INST]"
+    prompt = f"<s>[INST] Eres un experto financiero. El {fecha} el dólar llegó a {valor} MXN. Explica en 8 palabras en español por qué hubo esa anomalía. [/INST]"
     
     payload = {
         "inputs": prompt,
-        "parameters": {"max_new_tokens": 50, "return_full_text": False}
+        "parameters": {"max_new_tokens": 50},
+        "options": {"wait_for_model": True} # <--- ESTO obliga a HF a esperar a que el modelo despierte
     }
 
     try:
-        response = requests.post(API_URL, headers=headers, json=payload)
+        response = requests.post(API_URL, headers=headers, json=payload, timeout=30)
+        
+        # Si no es un 200 (éxito), imprimimos qué pasó
+        if response.status_code != 200:
+            print(f"Error de Servidor ({response.status_code}): {response.text}")
+            return "Ajuste por factores macroeconómicos."
+
         res_json = response.json()
         
-        # Hugging Face devuelve una lista con el texto
         if isinstance(res_json, list) and 'generated_text' in res_json[0]:
-            texto = res_json[0]['generated_text'].strip()
-            return texto
+            return res_json[0]['generated_text'].strip()
         else:
-            print(f"Error HF: {res_json}")
-            return "Ajuste técnico por volatilidad global."
+            return "Volatilidad de mercado por eventos externos."
             
-    except Exception as err:
-        print(f"Error de conexión HF: {err}")
+    except Exception as e:
+        print(f"Error técnico: {e}")
         return "Movimiento de mercado estándar."
 
 # 4. INGESTA DE DATOS
