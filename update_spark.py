@@ -20,26 +20,31 @@ from huggingface_hub import InferenceClient
 
 def obtener_explicacion_ia(fecha, valor):
     token = os.getenv("HF_TOKEN")
-    
-    # El cliente oficial se encarga de conectar con el Router correcto
     client = InferenceClient(api_key=token)
     
-    prompt = f"Explain in one short sentence why the USD/MXN exchange rate had a spike on {fecha}."
+    # --- PROMPT RECARGADO EN ESPAÑOL ---
+    prompt = (
+        f"Eres un analista financiero experto. Explica en UNA SOLA oración corta y EN ESPAÑOL "
+        f"qué evento causó la volatilidad del peso mexicano el {fecha}. "
+        f"No uses inglés, responde solo en español."
+    )
 
     try:
-        # Usamos el modelo de Meta que es el más robusto
         response = client.chat.completions.create(
             model="meta-llama/Llama-3.2-1B-Instruct",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=50
+            messages=[
+                {"role": "system", "content": "Responde siempre en español mexicano de forma profesional."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=80, # Le damos un poco más de espacio porque el español es más largo
+            temperature=0.1
         )
         
-        # Si llega aquí, es un Status 200 automático
         return response.choices[0].message.content.strip()
             
     except Exception as e:
-        print(f"DEBUG [{fecha}]: Falló el cliente oficial - {str(e)}")
-        return "Variación por condiciones del mercado."
+        print(f"DEBUG [{fecha}]: Error - {str(e)}")
+        return "Variación por volatilidad del mercado."
 
 # 4. INGESTA DE DATOS
 headers = {'Bmx-Token': TOKEN}
