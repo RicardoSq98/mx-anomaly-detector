@@ -28,7 +28,8 @@ jobs:
 
       - name: Instalar Spark, IA y Librerías
         run: |
-          pip install pyspark pandas pyarrow requests scipy google-generativeai
+          python -m pip install --upgrade pip
+          pip install pyspark pandas pyarrow requests scipy google-generativeai==0.7.2
 
       - name: Ejecutar Script de Spark e IA
         run: python update_spark.py
