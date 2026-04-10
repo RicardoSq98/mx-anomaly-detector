@@ -12,7 +12,7 @@ st.set_page_config(
 )
 
 # 2. Carga de datos con Cache
-@st.cache_data
+@st.cache_data(ttl=3600)  # Revisa cambios en el archivo cada hora
 def load_data():
     df = pd.read_parquet("datos_anomalias.parquet")
     df['fecha'] = pd.to_datetime(df['fecha'])
