@@ -4,6 +4,7 @@ import plotly.express as px
 import json
 import os
 from datetime import timedelta
+import datetime
 
 # 1. Configuración de la página
 st.set_page_config(
@@ -39,8 +40,16 @@ try:
     ultimo_precio = ultimo_registro["tipo_cambio"]
     delta_precio = ultimo_precio - penultimo_registro["tipo_cambio"]
     total_anomalias = df[df["es_anomalia"] == 1].shape[0]
-    ultima_dt = df["fecha"].max() - timedelta(hours=6)
-    ultima_fecha = ultima_dt.strftime('%d/%m/%Y %I:%M %p')
+    # En lugar de usar df["fecha"].max(), usamos esto:
+    try:
+        # Obtenemos la hora de modificación del archivo físico
+        ts = os.path.getmtime("datos_anomalias.parquet")
+        # La convertimos a objeto de fecha y restamos 6 horas (UTC a CDMX)
+        ultima_dt = datetime.datetime.fromtimestamp(ts) - timedelta(hours=6)
+        ultima_fecha = ultima_dt.strftime('%d/%m/%Y %I:%M %p')
+    except:
+        # Si algo falla, usamos la del dataframe como plan B (sin resta)
+        ultima_fecha = df["fecha"].max().strftime('%d/%m/%Y')
 
     with col1:
         st.metric("Precio Actual (FIX)", f"${ultimo_precio:.4f}", f"{delta_precio:.4f}")
