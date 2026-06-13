@@ -8,7 +8,7 @@ import datetime
 
 # 1. Configuración de la página
 st.set_page_config(
-    page_title="Monitor de Anomalías MX - Spark",
+    page_title="Monitor de Anomalías MX/USD - Spark",
     page_icon="🇲🇽",
     layout="wide"
 )
