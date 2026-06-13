@@ -7,25 +7,24 @@ from pyspark.sql.window import Window
 import pyspark.sql.functions as F
 from pyspark.sql.functions import col, to_date, abs, when, avg as _avg, stddev as _std
 
-# 1. INICIALIZAR SPARK
+# 1. EMPEZANDO SPARK
 spark = SparkSession.builder.master("local[*]").appName("AutomatedSparkPipeline").getOrCreate()
 
-# 2. CONFIGURACIÓN DE API
+# 2. APY BANCO
 TOKEN = os.getenv("BANXICO_TOKEN") 
 SERIE = 'SF43718' 
 URL = f'https://www.banxico.org.mx/SieAPIRest/service/v1/series/{SERIE}/datos'
 
-# 3. FUNCIÓN DE IA (Con la URL que el Router SI acepta)
+# 3. IA EXPLICACION
 from huggingface_hub import InferenceClient
 
 def obtener_explicacion_ia(fecha, valor):
     token = os.getenv("HF_TOKEN")
     client = InferenceClient(api_key=token)
     
-    # --- PROMPT RECARGADO EN ESPAÑOL ---
     prompt = (
-        f"Eres un analista financiero experto. Explica en UNA SOLA oración corta y EN ESPAÑOL "
-        f"qué evento causó la volatilidad del peso mexicano el {fecha}. "
+        f"Eres un analista financiero. Explica en una oración corta y en español"
+        f"qué evento causó la volatilidad del peso mexicano el {fecha}."
         f"No uses inglés, responde solo en español."
     )
 
@@ -36,7 +35,7 @@ def obtener_explicacion_ia(fecha, valor):
                 {"role": "system", "content": "Responde siempre en español mexicano de forma profesional."},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=80, # Le damos un poco más de espacio porque el español es más largo
+            max_tokens=80,
             temperature=0.1
         )
         
@@ -44,7 +43,7 @@ def obtener_explicacion_ia(fecha, valor):
             
     except Exception as e:
         print(f"DEBUG [{fecha}]: Error - {str(e)}")
-        return "Variación por volatilidad del mercado."
+        return "Variación por volatilidad del mercado." # SI NO CONECTA A LLAMA MANDA MENSAJE POR DEFAULT, DEPENDE DE QUE TAN SATURADO ESTE LLAMA
 
 # 4. INGESTA DE DATOS
 headers = {'Bmx-Token': TOKEN}
@@ -60,12 +59,12 @@ if response.status_code == 200:
 else:
     raise Exception(f"Error Banxico: {response.status_code}")
 
-# 5. FEATURE ENGINEERING
+# 5. INGENIERIA DE ATRIBUTOS
 windowSpec = Window.orderBy("fecha")
 df_features = df_spark.withColumn("precio_anterior", F.lag("tipo_cambio", 1).over(windowSpec)) \
     .withColumn("cambio_diario", F.col("tipo_cambio") - F.col("precio_anterior")).na.drop()
 
-# 6. DETECCIÓN DE ANOMALÍAS
+# 6. SE DETECTAN LAS ANOMALIAS
 ventana_global = Window.partitionBy(F.lit(1))
 df_stats = df_features.withColumn("avg_historico", _avg("cambio_diario").over(ventana_global)) \
                        .withColumn("std_historico", _std("cambio_diario").over(ventana_global))
@@ -76,7 +75,7 @@ df_final = df_stats.withColumn(
     "es_anomalia", when(abs(F.col("z_score_final")) > 2.5, 1).otherwise(0)
 )
 
-# 7. INTEGRACIÓN CON IA + PRUEBA HISTÓRICA
+# 7. INTEGRACION DE LA IA CON HISTORICO
 noticias_dict = {}
 anomalias_recientes = df_final.filter(F.col("es_anomalia") == 1).sort(F.col("fecha").desc()).limit(5).collect()
 
@@ -84,7 +83,7 @@ for row in anomalias_recientes:
     fecha_str = str(row['fecha'])
     noticias_dict[fecha_str] = obtener_explicacion_ia(fecha_str, row['tipo_cambio'])
 
-# PRUEBA DE FUEGO (TRUMP 2016)
+# PRUEBA CON DIA HISTORICO ESPECIAL, PRESIDENCIA DE TRUMP
 fecha_historica = "2016-11-09"
 noticias_dict[fecha_historica] = obtener_explicacion_ia(fecha_historica, 20.50)
 
