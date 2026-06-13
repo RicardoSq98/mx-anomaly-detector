@@ -33,7 +33,7 @@ jobs:
       - name: Ejecutar Script de Spark e IA
         env:
           BANXICO_TOKEN: ${{ secrets.BANXICO_TOKEN }}
-          HF_TOKEN: ${{ secrets.HF_TOKEN }} # <--- ¡ESTA ES LA CLAVE!
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: python update_spark.py
 
       - name: Guardar cambios en el Repo
