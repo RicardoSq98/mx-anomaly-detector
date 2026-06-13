@@ -15,6 +15,6 @@ El proyecto implementa un flujo de ingenieria de datos y automatización.
 
 **Almacenamiento:** Los resultados se exportan en formato Parquet, optimizando el espacio en disco y la velocidad de lectura para la App.  
 
-**Orquestación (GitHub Actions):** Un "robot" (workflow CI/CD) ejecuta el clúster de Spark diariamente a las 08:00 AM CDMX.  
+**Orquestación (GitHub Actions):** Un "robot" (workflow CI/CD) ejecuta el clúster de Spark diariamente.  
 
 **Visualización (Streamlit):** Dashboard interactivo alojado en la nube que permite explorar cada anomalía detectada con gráficos dinámicos de Plotly.
